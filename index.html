@@ -50,7 +50,7 @@
     label { display:inline-block; width:180px; margin-bottom:0.5em; vertical-align: middle; }
     fieldset > input[type="text"],
     fieldset > input[type="date"],
-    fieldset > input[type="number"],
+    fieldset > input[type="number"], /* Keep for other number fields if any */
     fieldset > select {
       width: calc(100% - 195px); 
       padding: 0.6em;
@@ -59,6 +59,12 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+    /* Specific style for batchCount to ensure it's easily tappable */
+    #batchCount {
+        width: 70px !important; /* Make it a bit wider for easier tap/edit */
+        text-align: center;
+    }
+
     .batch-details-line { display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap;}
     .batch-details-line > strong { margin-right: 10px; }
     .batch-details-line > input[name="batchNumber"] { width: 80px; padding: 0.5em; margin-right:10px; }
@@ -96,42 +102,39 @@
     #printableInvoiceSection table{
         width:100%; 
         border-collapse:collapse;
-        margin-bottom:2px; /* Increased gap slightly */
+        margin-bottom:2px; 
         font-size:8.5px; 
         table-layout: fixed; 
     } 
     #printableInvoiceSection th, 
     #printableInvoiceSection td{
         border:1px solid #555; 
-        padding: 3px 2px; /* Increased vertical padding for row height */
+        padding: 3px 2px; 
         vertical-align:top; 
         word-wrap: break-word; 
         overflow-wrap: break-word; 
         word-break: break-all; 
     }
-    /* Column widths for the first table (Invoice No, Date, Static Info) */
     #printableInvoiceSection .table-header .col-invoice-no{width:28%;}
     #printableInvoiceSection .table-header .col-date{width:17%;text-align:center}
     #printableInvoiceSection .table-header .col-static{width:55%;}
 
-    /* Column widths for the main items table */
     #printableInvoiceSection .table-items .col-sl{width:4%; text-align:center;}
-    #printableInvoiceSection .table-items .col-part{width:48%;} /* Adjusted */
+    #printableInvoiceSection .table-items .col-part{width:48%;} 
     #printableInvoiceSection .table-items .col-hsn-preview{width:12%; text-align:center;}
     #printableInvoiceSection .table-items .col-gst-preview{width:10%; text-align:center;}
-    #printableInvoiceSection .table-items .col-amount-preview{width:26%;text-align:right;} /* Adjusted */
+    #printableInvoiceSection .table-items .col-amount-preview{width:26%;text-align:right;} 
     
-    /* Column widths for the tax summary table */
     #printableInvoiceSection .table-tax-summary .col-hsn-sum{width:28%;} 
     #printableInvoiceSection .table-tax-summary .col-tax-sum{width:18%;text-align:right} 
     #printableInvoiceSection .table-tax-summary .col-central-tax-rate{width:8%;text-align:center}
     #printableInvoiceSection .table-tax-summary .col-central-tax-amt{width:13%;text-align:right}
     #printableInvoiceSection .table-tax-summary .col-state-tax-rate{width:8%;text-align:center}
     #printableInvoiceSection .table-tax-summary .col-state-tax-amt{width:13%;text-align:right}
-    #printableInvoiceSection .table-tax-summary .col-tot-tax-sum{width:12%;text-align:right} /* Adjusted sum */
+    #printableInvoiceSection .table-tax-summary .col-tot-tax-sum{width:12%;text-align:right} 
     
     #printableInvoiceSection .bank-details strong{display:inline;margin:0}
-    #printableInvoiceSection p { margin: 1px 0; font-size: 8.5px; line-height: 1.3; } /* Added line-height */
+    #printableInvoiceSection p { margin: 1px 0; font-size: 8.5px; line-height: 1.3; } 
 
 
     #recordsTableContainer { overflow-x: auto; }
@@ -178,7 +181,7 @@
       <div class="collapsible-content">
         <fieldset>
           <label for="batchCount">Number of Batches:</label>
-          <input id="batchCount" type="text" inputmode="numeric" pattern="[0-9]*" minlength="1" maxlength="2" value="1" />
+          <input id="batchCount" type="text" inputmode="numeric" pattern="[0-9]*" minlength="1" maxlength="2" value="" placeholder="1-10" style="width: 70px; text-align: center;" />
         </fieldset>
         <div id="batchesContainer" style="padding:0 1em 1em 1em;"></div>
       </div>
@@ -196,9 +199,9 @@
       <div class="collapsible-content">
         <fieldset>
           <label for="accountName">Account Name:</label><input id="accountName" type="text" placeholder="Enter account name" value="K VIJAY SRINIVAS" /><br>
-          <label for="bankName">Bank Name:</label><input id="bankName" type="text" placeholder="Enter bank name" value="XYZ BANK LTD" /><br>
-          <label for="accountNumber">A/c No:</label><input id="accountNumber" type="text" placeholder="Enter account number" value="123456789" /><br>
-          <label for="ifscCode">IFSC:</label><input id="ifscCode" type="text" placeholder="Enter IFSC code" value="ICIC0000123" /><br>
+          <label for="bankName">Bank Name:</label><input id="bankName" type="text" placeholder="Enter bank name" value="ICICI BANK LTD" /><br>
+          <label for="accountNumber">A/c No:</label><input id="accountNumber" type="text" placeholder="Enter account number" value="630501060806" /><br>
+          <label for="ifscCode">IFSC:</label><input id="ifscCode" type="text" placeholder="Enter IFSC code" value="ICIC0000370" /><br>
           <label for="accountType">Account Type:</label><input id="accountType" type="text" placeholder="Enter account type" value="Savings Bank" /><br>
         </fieldset>
       </div>
@@ -231,18 +234,36 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
-  // --- Collapsible Script ---
+  // --- Collapsible Script (Revised Accordion Logic) ---
   var coll = document.getElementsByClassName("collapsible");
   for (var i = 0; i < coll.length; i++) {
     coll[i].addEventListener("click", function() {
-      var isActive = this.classList.contains("active");
+      var content = this.nextElementSibling;
+      var isCurrentlyActive = this.classList.contains("active");
+
+      // Close all other sections first
       for (var j = 0; j < coll.length; j++) {
-        coll[j].classList.remove('active');
-        coll[j].nextElementSibling.style.display = "none";
+        if (coll[j] !== this) { // If it's not the clicked button
+          coll[j].classList.remove("active");
+          if (coll[j].nextElementSibling) {
+            coll[j].nextElementSibling.style.display = "none";
+          }
+        }
       }
-      if (!isActive) {
+
+      // Toggle the clicked section
+      if (isCurrentlyActive) {
+        // If it was active, close it
+        this.classList.remove("active");
+        if (content) {
+          content.style.display = "none";
+        }
+      } else {
+        // If it was not active, open it
         this.classList.add("active");
-        this.nextElementSibling.style.display = "block";
+        if (content) {
+          content.style.display = "block";
+        }
       }
     });
   }
@@ -309,17 +330,36 @@
     return description.replace(/\s*\(.*?\)\s*/g, '').trim();
   }
 
-  // Render batches
-  document.getElementById('batchCount').addEventListener('input',renderBatches);
-  document.getElementById('gstApplicable').addEventListener('change',renderBatches);
+  // Render batches - Logic for batchCount input
+  const batchCountInput = document.getElementById('batchCount'); 
+  let debounceTimer; 
 
-  function renderBatches(){
-    batchesContainer.innerHTML='';
-    const batchCountVal = document.getElementById('batchCount').value;
-    const cnt = Math.max(1, Math.min(10, Number(batchCountVal) || 1));
-    document.getElementById('batchCount').value = cnt; 
+  function debounce(func, delay) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(func, delay);
+  }
 
-    for(let b=1;b<=cnt;b++){
+  function processBatchCountChange() {
+    const rawValue = batchCountInput.value.trim();
+    let numberOfBatchesToRender = 1; 
+
+    if (rawValue !== "") { 
+        const parsedValue = parseInt(rawValue, 10);
+        if (!isNaN(parsedValue)) { 
+            numberOfBatchesToRender = Math.max(1, Math.min(10, parsedValue)); 
+        }
+    }
+    
+    if (rawValue !== "" && (isNaN(parseInt(rawValue, 10)) || parseInt(rawValue, 10) !== numberOfBatchesToRender)) {
+        batchCountInput.value = numberOfBatchesToRender;
+    }
+
+    renderActualBatches(numberOfBatchesToRender);
+  }
+
+  function renderActualBatches(count) {
+    batchesContainer.innerHTML=''; 
+    for(let b=1; b<=count; b++){
       const batchDiv=document.createElement('div');
       batchDiv.className='batch-block';
       batchDiv.innerHTML=`
@@ -362,6 +402,31 @@
       batchesContainer.appendChild(batchDiv);
     }
   }
+  
+  batchCountInput.addEventListener('input', () => {
+    debounce(processBatchCountChange, 700); 
+  });
+
+  batchCountInput.addEventListener('blur', () => {
+    clearTimeout(debounceTimer); 
+    const rawValue = batchCountInput.value.trim();
+    let finalNumberOfBatches = 1; 
+
+    if (rawValue !== "") {
+        const parsedValue = parseInt(rawValue, 10);
+        if (!isNaN(parsedValue)) {
+            finalNumberOfBatches = Math.max(1, Math.min(10, parsedValue));
+        }
+    }
+    batchCountInput.value = finalNumberOfBatches; 
+    renderActualBatches(finalNumberOfBatches); 
+  });
+
+  document.getElementById('gstApplicable').addEventListener('change', () => {
+      clearTimeout(debounceTimer); 
+      processBatchCountChange(); 
+  });
+
 
   // Add/remove rows for batches
   batchesContainer.addEventListener('click',e=>{
@@ -707,7 +772,7 @@
       margin:       [0.5, 0.4, 0.5, 0.4], 
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 1.7, letterRendering: true, useCORS: true, dpi: 192, scrollY: 0 }, // Adjusted scale
+      html2canvas:  { scale: 1.7, letterRendering: true, useCORS: true, dpi: 192, scrollY: 0 }, 
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
     };
@@ -751,18 +816,27 @@
 
   // --- Initial setup ---
   window.addEventListener('DOMContentLoaded', () => {
-    // Set default date to today
     const today = new Date();
     const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); 
     const dd = String(today.getDate()).padStart(2, '0');
     document.getElementById('invoiceDate').value = `${yyyy}-${mm}-${dd}`;
 
     drawRecordsTable();
-    renderBatches();
+    renderActualBatches(1); 
     if (coll.length > 0 && !coll[0].classList.contains('active')) { 
+        // This ensures the first collapsible is open if not already marked active by HTML.
+        // The HTML already marks the first one active, so this is a fallback.
         coll[0].classList.add('active');
-        coll[0].nextElementSibling.style.display = "block";
+        if (coll[0].nextElementSibling) {
+            coll[0].nextElementSibling.style.display = "block";
+        }
+    } else if (coll.length > 0 && coll[0].classList.contains('active')) {
+        // If the first one is active as per HTML, ensure its content is displayed.
+        // This is redundant if HTML style="display:block" is present, but safe.
+        if (coll[0].nextElementSibling && coll[0].nextElementSibling.style.display !== 'block') {
+            coll[0].nextElementSibling.style.display = "block";
+        }
     }
     document.getElementById('invoicePreview').innerHTML = ''; 
   });
