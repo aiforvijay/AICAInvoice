@@ -1,840 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice Tool - Local Version</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; font-size: 14px; }
-    header { background:#004a80; color:white; padding:1em; text-align:center; }
-
-    .tabs { display:flex; flex-wrap: wrap; }
-    .tabs button {
-      flex-grow: 1; padding:1em; cursor:pointer;
-      background:#f0f0f0; border:none; border-bottom:2px solid #ccc;
-      font-size:1em; min-width: 150px;
-    }
-    .tabs button.active {
-      background:white; border-bottom:2px solid #004a80;
-    }
-    .tabContent { display:none; padding:1em; }
-    .tabContent.active { display:block; }
-
-    .collapsible {
-      background-color: #f1f1f1;
-      color: #444;
-      cursor: pointer;
-      padding: 15px;
-      width: 100%;
-      border: none;
-      text-align: left;
-      outline: none;
-      font-size: 1em;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
-    .collapsible.active, .collapsible:hover {
-      background-color: #ccc;
-    }
-    .collapsible-content {
-      padding: 10px 18px;
-      display: none;
-      overflow: hidden;
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-top: none;
-    }
-
-    fieldset { margin-bottom:1em; padding:1em; border: none; }
-    legend { font-weight:bold; display: none; }
-    label { display:inline-block; width:180px; margin-bottom:0.5em; vertical-align: middle; }
-    fieldset > input[type="text"],
-    fieldset > input[type="date"],
-    fieldset > input[type="number"],
-    fieldset > select {
-      width: calc(100% - 195px); 
-      padding: 0.6em;
-      margin-bottom: 0.5em;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    #batchCount {
-        width: 70px !important; 
-        text-align: center;
-    }
-
-    .batch-details-line { display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap;}
-    .batch-details-line > strong { margin-right: 10px; }
-    .batch-details-line > input[name="batchNumber"] { width: 80px; padding: 0.5em; margin-right:10px; }
-    .batch-details-line > label { width: auto; margin-right: 5px;}
-    .batch-details-line > input[name="branchName"] { width: 200px; padding: 0.5em; }
-
-
-    .batch-items input,
-    .batch-items select { 
-      width: 100%; box-sizing:border-box; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px;
-    }
-     .batch-block { border:1px solid #ccc; padding:1em; margin-bottom:1em; background:#fff; border-radius: 4px; }
-    .batch-items th, .batch-items td { padding: 5px; text-align: left; vertical-align: top; }
-    .batch-items td input[name="slNo"] { text-align:center; }
-    .batch-items td input[name="amount"] { text-align:right; }
-
-
-    .action-buttons button, #downloadExcelBtn {
-        margin:10px 5px 10px 0; padding:10px 15px; background:#004a80; color:white; border:none; cursor:pointer; font-size: 1em; border-radius: 4px;
-    }
-    .action-buttons button:hover, #downloadExcelBtn:hover { background: #003366; }
-
-    /* Styles for the preview area that will be converted to PDF - FROM invoice_tool V 4.0.html */
-    #printableInvoiceSection * { /* Keep this for consistent box model in PDF content */
-        box-sizing: border-box !important;
-    }
-    #invoicePreview { border:2px solid #004a80; padding:1em; margin-top:1em; overflow-x:auto; background: white; }
-    #invoicePreview table{width:100%;border-collapse:collapse;margin-bottom:-1px;font-size:12px}
-    #invoicePreview th,#invoicePreview td{border:1px solid #333;padding:6px;vertical-align:top}
-    /* Column classes used by JavaScript to structure the preview table - these will be applied from invoice_tool_V_4.0.html CSS */
-    #invoicePreview .col-invoice-no{width:30%;}
-    #invoicePreview .col-date{width:20%;text-align:center;}
-    #invoicePreview .col-static{width:50%;}
-    #invoicePreview .col-sl{width:4%; text-align:center;} /* Applied to Sl. No. column in items table */
-    #invoicePreview .col-part{width:72%;} /* Applied to Particulars column in items table */
-    #invoicePreview .col-hsn-preview{width:9%; text-align:center;} /* Applied to HSN/SAC column in items table */
-    #invoicePreview .col-gst-preview{width:5%; text-align:center;} /* Applied to GST Rate column in items table */
-    #invoicePreview .col-amount-preview{width:10%;text-align:right;} /* Applied to Amount column in items table */
-    
-    #invoicePreview .tax-sum th,
-    #invoicePreview .tax-sum td{padding:6px;word-wrap:break-word;} /* .tax-sum is a class applied to the tax summary table */
-    #invoicePreview .col-hsn-sum{width:45ch;} /* Applied to HSN/SAC column in tax summary */
-    #invoicePreview .col-tax-sum{width:14ch;text-align:right;} /* Applied to Taxable Value column in tax summary */
-    #invoicePreview .col-central-tax-rate, /* Ensure JS uses these if not already */
-    #invoicePreview .col-state-tax-rate,
-    #invoicePreview .col-rate-sum {width:5ch;text-align:center;} /* Rate columns in tax summary */
-    #invoicePreview .col-central-tax-amt, /* Ensure JS uses these if not already */
-    #printableInvoiceSection .col-state-tax-amt,
-    #invoicePreview .col-amt-sum {width:12ch;text-align:right;} /* Amount columns in tax summary */
-    #invoicePreview .col-tot-tax-sum, /* Ensure JS uses this for Total Tax column */
-    #invoicePreview .col-tot-sum {width:16ch;text-align:right;} /* Total Tax column in tax summary */
-    
-    #invoicePreview .bank-details strong{display:inline;margin:0;} /* .bank-details is a class applied to the bank details table */
-    #invoicePreview p { margin: 3px 0; font-size:12px; line-height: 1.2;} /* General p tag styling within preview, from V4 style */
-
-
-    #recordsTableContainer { overflow-x: auto; }
-    #recordsTable, #recordsTable th, #recordsTable td {
-      border:1px solid #333; border-collapse:collapse; padding:5px; font-size:0.85em; white-space: nowrap;
-    }
-    #recordsTable th { background:#e0e0e0; text-align: left; }
-    #recordsTable { width:100%; margin-bottom:1em; }
-    #recordsTable td button { padding: 3px 6px; font-size: 0.9em;}
-
-    footer { margin-top:2em; padding: 1em; font-size:0.8em; color:#555; text-align:center; background: #f0f0f0; }
-  
-#printableInvoiceSection {
-  min-height: 21cm; /* ~A4 height */
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Vertically center */
-  padding: 1cm;
-}
-
-#invoicePreview table.table-items {
-  min-height: 15cm; /* Occupy ~75% of A4 height */
-}
-
-#invoicePreview {
-  max-width: 100%; /* Prevent overflow in PDF */
-  box-sizing: border-box;
-}
-
-
-#invoicePreview table,
-#invoicePreview th,
-#invoicePreview td {
-  border: 1px solid #333 !important;
-  border-collapse: collapse !important;
-}
-#invoicePreview th,
-#invoicePreview td {
-  padding: 6px;
-}
-
-
-  /* Wrap text in the Particulars column */
-  .particulars-cell {
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-  }
-
-  /* Ensure all tables have border lines */
-  table, th, td {
-    border: 1px solid black !important;
-    border-collapse: collapse !important;
-  }
-
-  /* Padding to ensure readability */
-  th, td {
-    padding: 4px !important;
-  }
-</style>
-</head>
-<body>
-
-  <header><h1>Invoice Generation Tool</h1></header>
-
-  <div class="tabs">
-    <button id="tab1Btn" class="active">Invoice Generation</button>
-    <button id="tab2Btn">Invoice Records</button>
-  </div>
-
-  <div id="tab1" class="tabContent active">
-    <form id="invoiceForm">
-
-      <button type="button" class="collapsible active">Invoice & Faculty Details</button>
-      <div class="collapsible-content" style="display: block;">
-        <fieldset>
-          <label for="invoiceNumber">Invoice No:</label><input id="invoiceNumber" type="text" placeholder="Enter Invoice No." value="KVS-###" /><br>
-          <label for="invoiceDate">Invoice Date:</label><input id="invoiceDate" type="date" required /><br>
-          <label for="facultyName">Faculty Name:</label><input id="facultyName" type="text" placeholder="Enter faculty name" value="K VIJAY SRINIVAS" /><br>
-        </fieldset>
-      </div>
-
-      <button type="button" class="collapsible">GST Applicability</button>
-      <div class="collapsible-content">
-        <fieldset>
-          <label for="gstApplicable">Is GST applicable?</label>
-          <select id="gstApplicable"><option value="Yes">Yes</option><option value="No">No</option></select>
-        </fieldset>
-      </div>
-
-      <button type="button" class="collapsible">Batch Configuration</button>
-      <div class="collapsible-content">
-        <fieldset>
-          <label for="batchCount">Number of Batches:</label>
-          <input id="batchCount" type="text" inputmode="numeric" pattern="[0-9]*" minlength="1" maxlength="2" value="" placeholder="1-10" style="width: 70px; text-align: center;" />
-        </fieldset>
-        <div id="batchesContainer" style="padding:0 1em 1em 1em;"></div>
-      </div>
-
-      <button type="button" class="collapsible">Amounts & Taxes (Auto-calculated)</button>
-      <div class="collapsible-content">
-        <fieldset>
-          <label for="amountInWords">Total Amount (in words):</label><input id="amountInWords" type="text" readonly /><br>
-          <label for="advancePaidAmount">Advance Paid (₹):</label><input id="advancePaidAmount" type="number" step="0.01" value="0" /><br>
-          <label for="taxAmountInWords">Total Tax (in words):</label><input id="taxAmountInWords" type="text" readonly /><br>
-        </fieldset>
-      </div>
-
-      <button type="button" class="collapsible">Bank Details</button>
-      <div class="collapsible-content">
-        <fieldset>
-          <label for="accountName">Account Name:</label><input id="accountName" type="text" placeholder="Enter account name" value="K VIJAY SRINIVAS" /><br>
-          <label for="bankName">Bank Name:</label><input id="bankName" type="text" placeholder="Enter bank name" value="XYZ BANK LTD" /><br>
-          <label for="accountNumber">A/c No:</label><input id="accountNumber" type="text" placeholder="Enter account number" value="123456789" /><br>
-          <label for="ifscCode">IFSC:</label><input id="ifscCode" type="text" placeholder="Enter IFSC code" value="ICIC0000123" /><br>
-          <label for="accountType">Account Type:</label><input id="accountType" type="text" placeholder="Enter account type" value="Savings Bank" /><br>
-        </fieldset>
-      </div>
-    </form>
-
-    <div class="action-buttons" style="text-align:center; margin:20px;">
-      <button id="previewBtn">Show Preview</button>
-      <button id="updateTableBtn">Save Record & View</button> <button id="pdfBtn">Generate PDF</button>
-    </div>
-
-    <div id="invoicePreview">
-
-    </div>
-  </div>
-
-  <div id="tab2" class="tabContent">
-    <h2>Invoice Records</h2>
-    <div id="recordsTableContainer">
-        <table id="recordsTable">
-          <thead><tr id="recordsHeader"></tr></thead>
-          <tbody id="recordsBody"></tbody>
-        </table>
-    </div>
-    <button id="downloadExcelBtn">Download Records (Excel)</button>
-  </div>
-
-  <footer>Created by CA Vijay Srinivas Kothapalli, Partner C Ramachandram & Co., Chartered Accountants. © All rights reserved.</footer>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <script>
-  // --- Collapsible Script ---
-  var coll = document.getElementsByClassName("collapsible");
-  for (var i = 0; i < coll.length; i++) {
-    coll[i].addEventListener("click", function() {
-      var content = this.nextElementSibling;
-      var isCurrentlyActive = this.classList.contains("active");
-
-      for (var j = 0; j < coll.length; j++) {
-        if (coll[j] !== this) { 
-          coll[j].classList.remove("active");
-          if (coll[j].nextElementSibling) {
-            coll[j].nextElementSibling.style.display = "none";
-          }
-        }
-      }
-
-      if (isCurrentlyActive) {
-        this.classList.remove("active");
-        if (content) {
-          content.style.display = "none";
-        }
-      } else {
-        this.classList.add("active");
-        if (content) {
-          content.style.display = "block";
-        }
-      }
-    });
-  }
-
-  // --- Core Invoice Logic ---
-  const invoiceForm = document.getElementById('invoiceForm');
-  const batchesContainer=document.getElementById('batchesContainer');
-
-  function gstYes(){ return document.getElementById('gstApplicable').value==='Yes'; }
-
-  // Number to Words (Indian System) 
-  function numberToWords(num) {
-    const a = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
-    const b = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
-    num = Math.round(num); 
-    if (num === 0) return "zero";
-    if (num < 0) return "minus " + numberToWords(Math.abs(num));
-    let words = "";
-    function getChunkWords(n) {
-        let s = "";
-        if (n >= 100) {
-            s += a[Math.floor(n / 100)] + " hundred";
-            n %= 100;
-            if (n > 0) s += " ";
-        }
-        if (n > 0) {
-            if (n < 20) s += a[n];
-            else {
-                s += b[Math.floor(n / 10)];
-                if (n % 10 > 0) s += " " + a[n % 10];
-            }
-        }
-        return s;
-    }
-    if (num >= 10000000) { 
-        words += getChunkWords(Math.floor(num / 10000000)) + " crore ";
-        num %= 10000000;
-    }
-    if (num >= 100000) { 
-        words += getChunkWords(Math.floor(num / 100000)) + " lakh ";
-        num %= 100000;
-    }
-    if (num >= 1000) { 
-        words += getChunkWords(Math.floor(num / 1000)) + " thousand ";
-        num %= 1000;
-    }
-    if (num > 0) { 
-        words += getChunkWords(num);
-    }
-    return words.trim().replace(/\s+/g, ' ');
-  }
-
-  // Tab switching
-  document.getElementById('tab1Btn').onclick=()=>switchTab(1);
-  document.getElementById('tab2Btn').onclick=()=>switchTab(2);
-  function switchTab(n){
-    document.querySelectorAll('.tabContent').forEach((c,i)=>c.classList.toggle('active',i===n-1));
-    document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('active',i===n-1));
-  }
-  
-  // Function to clean item descriptions for headers
-  function cleanItemDescriptionForHeader(description) {
-    if (!description) return 'Unnamed Item';
-    return description.replace(/\s*\(.*?\)\s*/g, '').trim();
-  }
-
-  // Render batches - Logic for batchCount input
-  const batchCountInput = document.getElementById('batchCount'); 
-  let debounceTimer; 
-
-  function debounce(func, delay) {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(func, delay);
-  }
-
-  function processBatchCountChange() {
-    const rawValue = batchCountInput.value.trim();
-    let numberOfBatchesToRender = 1; 
-
-    if (rawValue !== "") { 
-        const parsedValue = parseInt(rawValue, 10);
-        if (!isNaN(parsedValue)) { 
-            numberOfBatchesToRender = Math.max(1, Math.min(10, parsedValue)); 
-        }
-    }
-    
-    if (rawValue !== "" && (isNaN(parseInt(rawValue, 10)) || parseInt(rawValue, 10) !== numberOfBatchesToRender)) {
-        batchCountInput.value = numberOfBatchesToRender;
-    }
-
-    renderActualBatches(numberOfBatchesToRender);
-  }
-
-  function renderActualBatches(count) {
-    batchesContainer.innerHTML=''; 
-    for(let b=1; b<=count; b++){
-      const batchDiv=document.createElement('div');
-      batchDiv.className='batch-block';
-      batchDiv.innerHTML=`
-        <div class="batch-details-line">
-            <strong>AI Certificate Course AICA-Level-1 - Batch</strong>
-            <input name="batchNumber" type="text" maxlength="3" pattern="\\d{1,3}" placeholder="e.g. 999" required value="${b}" />
-            <label for="branchName_${b}">Branch Name:</label>
-            <input name="branchName" id="branchName_${b}" type="text" maxlength="25" placeholder="Enter Branch Name" value="Hyderabad" />
-        </div>
-        <table class="batch-items" width="100%">
-            <thead>
-                <tr>
-                    <th style="width:5%;">Sl.</th>
-                    <th style="width:auto;">Particulars</th>
-                    <th style="width:10%;">HSN/SAC</th>
-                    <th style="width:10%;">GST Rate</th>
-                    <th style="width:15%;">Amount</th>
-                    <th style="width:5%;"></th>
-                </tr>
-            </thead>
-            <tbody><tr>
-                <td><input name="slNo" value="1" readonly /></div></div></div></td>
-                <td>
-                    <select name="description">
-                        <option value="Session Fees">Session Fees</option>
-                        <option value="Conveyance (Bill Enclosed)">Conveyance (Bill Enclosed)</option>
-                        <option value="Conveyance (Self Drive @Rs. 10 per km)">Conveyance (Self Drive @Rs. 10 per km)</option>
-                        <option value="Food Expenses (Bill Enclosed)">Food Expenses (Bill Enclosed)</option>
-                        <option value="Travel Expenses (Bill Enclosed)">Travel Expenses (Bill Enclosed)</option>
-                        <option value="Other Expenses (Bill Enclosed)">Other Expenses (Bill Enclosed)</option> 
-                    </select>
-                </td>
-                <td><input name="hsnSacCode" value="9982" readonly /></td>
-                <td><input name="gstRate" value="${gstYes()?'9%':'N.A.'}" readonly /></td>
-                <td><input name="amount" type="number" step="0.01" placeholder="0.00"/></td>
-                <td><button type="button" class="removeRow" style="padding: 0.2em 0.5em;">–</button></td>
-            </tr></tbody>
-        </table>
-        <button type="button" class="addRow" style="padding: 0.3em 0.8em; margin-top: 5px;">+ Add Item</button>`;
-      batchesContainer.appendChild(batchDiv);
-    }
-  }
-  
-  batchCountInput.addEventListener('input', () => {
-    debounce(processBatchCountChange, 700); 
-  });
-
-  batchCountInput.addEventListener('blur', () => {
-    clearTimeout(debounceTimer); 
-    const rawValue = batchCountInput.value.trim();
-    let finalNumberOfBatches = 1; 
-
-    if (rawValue !== "") {
-        const parsedValue = parseInt(rawValue, 10);
-        if (!isNaN(parsedValue)) {
-            finalNumberOfBatches = Math.max(1, Math.min(10, parsedValue));
-        }
-    }
-    batchCountInput.value = finalNumberOfBatches; 
-    renderActualBatches(finalNumberOfBatches); 
-  });
-
-  document.getElementById('gstApplicable').addEventListener('change', () => {
-      clearTimeout(debounceTimer); 
-      processBatchCountChange(); 
-  });
-
-
-  // Add/remove rows for batches
-  batchesContainer.addEventListener('click',e=>{
-    const batchBlockDiv =e.target.closest('.batch-block'); if(!batchBlockDiv) return;
-    if(e.target.classList.contains('addRow')){
-      const tbody=batchBlockDiv.querySelector('tbody');
-      const newRow=tbody.rows[0].cloneNode(true);
-      newRow.querySelector('[name=slNo]').value=tbody.rows.length+1;
-      newRow.querySelector('[name=description]').selectedIndex = 0; 
-      newRow.querySelector('[name=amount]').value='';
-      newRow.querySelector('[name=gstRate]').value=gstYes()?'9%':'N.A.';
-      tbody.appendChild(newRow);
-    }
-    if(e.target.classList.contains('removeRow')){
-      const tbody=batchBlockDiv.querySelector('tbody');
-      if(tbody.rows.length>1){
-        e.target.closest('tr').remove();
-        [...tbody.rows].forEach((r,i)=>r.querySelector('[name=slNo]').value=i+1);
-      } else {
-        alert("At least one item is required per batch.");
-      }
-    }
-  });
-
-  // --- Records Management ---
-  let records=[]; 
-
-  function drawRecordsTable(){
-    const hdrRow=document.getElementById('recordsHeader');
-    const bd=document.getElementById('recordsBody');
-    hdrRow.innerHTML=''; bd.innerHTML='';
-
-    if(!records.length) {
-        let colspanForEmpty = 8; 
-        const knownDynamicHeaders = new Set(); 
-        colspanForEmpty = 7 + knownDynamicHeaders.size + 1; 
-
-        bd.innerHTML = `<tr><td colspan="${colspanForEmpty}" style="text-align:center;">No records available.</td></tr>`;
-        return;
-    }
-
-    const fixedHeaders = ["Inv No", "Inv Date", "Batch No", "Branch Name", "Batch Taxable", "Batch CGST", "Batch SGST", "Batch Total", "Actions"];
-    
-    const dynamicItemHeaders = new Set();
-    records.forEach(rec => {
-        if(rec.Items) {
-            Object.keys(rec.Items).forEach(cleanedItemKey => dynamicItemHeaders.add(cleanedItemKey));
-        }
-    });
-    const allHeaders = [...fixedHeaders.slice(0, -1), ...Array.from(dynamicItemHeaders).sort(), fixedHeaders.slice(-1)[0]];
-
-
-    allHeaders.forEach(headerText =>{
-      const th=document.createElement('th'); th.textContent=headerText; hdrRow.appendChild(th);
-    });
-
-    records.forEach((rec, index)=>{
-      const tr=document.createElement('tr');
-      
-      tr.insertCell().textContent = rec.InvoiceNo || '';
-      tr.insertCell().textContent = rec.InvoiceDate || '';
-      tr.insertCell().textContent = rec.BatchNo || '';
-      tr.insertCell().textContent = rec.BranchName || ''; 
-      tr.insertCell().textContent = rec.BatchTaxableValue !== undefined ? parseFloat(rec.BatchTaxableValue).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0.00';
-      tr.insertCell().textContent = rec.BatchCGSTAmount !== undefined ? parseFloat(rec.BatchCGSTAmount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0.00';
-      tr.insertCell().textContent = rec.BatchSGSTAmount !== undefined ? parseFloat(rec.BatchSGSTAmount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0.00';
-      tr.insertCell().textContent = rec.BatchTotalValue !== undefined ? parseFloat(rec.BatchTotalValue).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0.00';
-      
-      Array.from(dynamicItemHeaders).sort().forEach(cleanedItemHeader => { 
-          const itemValue = rec.Items && rec.Items[cleanedItemHeader] !== undefined ? parseFloat(rec.Items[cleanedItemHeader]).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '0.00';
-          tr.insertCell().textContent = itemValue;
-      });
-
-      const tdAction=tr.insertCell();
-      const btnDelete=document.createElement('button');
-      btnDelete.textContent='Delete';
-      btnDelete.onclick=()=>{
-          if(confirm('Are you sure you want to delete this record locally?')) {
-            records.splice(index,1);
-            drawRecordsTable();
-          }
-      };
-      tdAction.appendChild(btnDelete);
-      bd.appendChild(tr);
-    });
-  }
-
-  // --- Invoice Calculation and Preview ---
-  document.getElementById('previewBtn').onclick = generateInvoiceDataAndPreview;
-
-  function generateInvoiceDataAndPreview(){
-    const facultyNameVal = invoiceForm.facultyName.value;
-    const invoiceData={
-      invoiceNumber: invoiceForm.invoiceNumber.value,
-      invoiceDate: invoiceForm.invoiceDate.value,
-      facultyName: facultyNameVal,
-      gstApplicable: gstYes(),
-      advancePaid: parseFloat(invoiceForm.advancePaidAmount.value)||0,
-      accountName: invoiceForm.accountName.value,
-      bankName: invoiceForm.bankName.value,
-      accountNumber: invoiceForm.accountNumber.value,
-      ifscCode: invoiceForm.ifscCode.value,
-      accountType: invoiceForm.accountType.value,
-      batchesData: [], 
-      overallTaxableAmount: 0,
-      overallCGSTAmount: 0,
-      overallSGSTAmount: 0,
-      overallTotalInvoiceValue: 0
-    };
-
-    document.querySelectorAll('#batchesContainer .batch-block').forEach(batchBlockDiv=>{
-      const batchNoInput = batchBlockDiv.querySelector('[name=batchNumber]');
-      const branchNameInput = batchBlockDiv.querySelector('[name=branchName]'); 
-      const currentBatchNo = batchNoInput ? batchNoInput.value : 'N/A';
-      const currentBranchName = branchNameInput ? branchNameInput.value : ''; 
-      
-      let batchTaxable = 0;
-      const batchItems = Array.from(batchBlockDiv.querySelectorAll('tbody tr')).map(r=>({
-        slNo: r.querySelector('[name=slNo]').value,
-        description: r.querySelector('[name=description]').value, 
-        hsnSacCode: r.querySelector('[name=hsnSacCode]').value,
-        gstRateDisplay: r.querySelector('[name=gstRate]').value, 
-        amount: parseFloat(r.querySelector('[name=amount]').value)||0
-      }));
-
-      batchItems.forEach(it => batchTaxable += it.amount);
-
-      let batchCGST = 0, batchSGST = 0;
-      if(invoiceData.gstApplicable){
-          batchCGST = batchTaxable * 0.09;
-          batchSGST = batchTaxable * 0.09;
-      }
-      const batchTotal = batchTaxable + batchCGST + batchSGST;
-
-      invoiceData.batchesData.push({
-          batchNo: currentBatchNo,
-          branchName: currentBranchName, 
-          items: batchItems,
-          batchTaxableAmount: batchTaxable,
-          batchCGSTAmount: batchCGST,
-          batchSGSTAmount: batchSGST,
-          batchTotalValue: batchTotal
-      });
-
-      invoiceData.overallTaxableAmount += batchTaxable;
-      invoiceData.overallCGSTAmount += batchCGST;
-      invoiceData.overallSGSTAmount += batchSGST;
-    });
-    invoiceData.overallTotalInvoiceValue = invoiceData.overallTaxableAmount + invoiceData.overallCGSTAmount + invoiceData.overallSGSTAmount;
-
-    const totalAmountInWordsStr = numberToWords(invoiceData.overallTaxableAmount);
-    invoiceForm.amountInWords.value = totalAmountInWordsStr.charAt(0).toUpperCase() + totalAmountInWordsStr.slice(1);
-    
-    const totalTaxInWordsStr = numberToWords(invoiceData.overallCGSTAmount + invoiceData.overallSGSTAmount);
-    invoiceForm.taxAmountInWords.value = totalTaxInWordsStr.charAt(0).toUpperCase() + totalTaxInWordsStr.slice(1);
-
-    const hsnSacCodeForPreview='9982'; 
-    const gstRateTextForPreview=invoiceData.gstApplicable?'9%':'N.A.';
-
-    const formatNum = (num) => num.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-
-    let htmlPreview=`<div id="printableInvoiceSection">`; 
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="table-header"> <tr><td class="col-invoice-no" style="border:1px solid #333;"><strong>Invoice No:</strong> ${invoiceData.invoiceNumber}</td>
-          <td class="col-date" style="border:1px solid #333;"><strong>Dated:</strong> ${invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate + 'T00:00:00').toLocaleDateString('en-GB') : ''}</td>
-          <td class="col-static" style="border:1px solid #333;" rowspan="2">
-            <strong>Committee/Department Name</strong>
-            <p>Mr. Vishnu Garg, Secretary, AI in ICAI</p>
-            <p>The Institute of Chartered Accountants of India</p>
-            <p>ICAI Bhawan, A-29, 5th Floor, Hostel Block, Sector 62</p>
-            <p>Noida-201309, Uttar Pradesh (INDIA)</p>
-            <p>Contact: phone | GSTIN/UIN: N.A.</p>
-            <p>Email: ai@icai.in | Mobile: 8800717953</p>
-          </td></tr>
-      <tr><td colspan="2"><strong>Details of the Faculty</strong><br><br>${invoiceData.facultyName}</td></tr>
-    </table>`;
-
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="table-items"> <thead>
-            <tr><th class="col-sl" style="border:1px solid #333;">Sl.</th><th class="col-part" style="border:1px solid #333;">Particulars</th>
-                <th class="col-hsn-preview" style="border:1px solid #333;">HSN/SAC</th><th class="col-gst-preview" style="border:1px solid #333;">GST Rate</th>
-                <th class="col-amount-preview" style="border:1px solid #333;">Amount (₹)</th></tr>
-        </thead>
-        <tbody>`;
-    let itemRunningSlNo = 1;
-    invoiceData.batchesData.forEach(batch=>{
-      const branchDisplay = batch.branchName ? `(${batch.branchName})` : '';
-      htmlPreview+=`<tr><td></td><td colspan="4"><strong>AI Certificate Course AICA-Level-1 - Batch ${batch.batchNo} ${branchDisplay}</strong></td></tr>`;
-      batch.items.forEach(it=>{
-        htmlPreview+=`<tr>
-          <td class="col-sl" style="border:1px solid #333;">${itemRunningSlNo++}</td>
-          <td class="col-part particulars-cell" style="border:1px solid #333; word-wrap:break-word; word-break:break-word; max-width:300px;">${it.description}</td>
-          <td class="col-hsn-preview" style="border:1px solid #333;"><div style="text-align:center;">${it.hsnSacCode}</td>
-          <td class="col-gst-preview" style="border:1px solid #333;"><div style="text-align:center;">${it.gstRateDisplay}</td>
-          <td class="col-amount-preview" style="border:1px solid #333;"><div style="text-align:right;">${formatNum(it.amount)}</td>
-        </tr>`;
-      });
-    });
-    htmlPreview+=`</tbody><tfoot>
-      <tr><td colspan="4" style="text-align:right"><strong>Total Taxable Amount</strong></td>
-          <td class="col-amount-preview" style="border:1px solid #333;"><div style="text-align:right;"><strong>${formatNum(invoiceData.overallTaxableAmount)}</strong></td></tr>
-    </tfoot></table>`;
-
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;"> <tr><td style="width:30%"><strong>Total Amount (in words)</strong></td>
-          <td style="width:70%;text-align:left">Rupees ${invoiceForm.amountInWords.value} only</td></tr>
-      <tr><td><strong>Advance Paid (₹)</strong></td>
-          <td style="text-align:right">${formatNum(invoiceData.advancePaid)}</td></tr>
-    </table>`;
-
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="tax-sum"> <thead>
-            <tr><th rowspan="2" class="col-hsn-sum">HSN/SAC</th>
-                <th rowspan="2" class="col-tax-sum">Taxable Value (₹)</th>
-                <th colspan="2">Central Tax</th><th colspan="2">State Tax</th>
-                <th rowspan="2" class="col-tot-tax-sum">Total Tax (₹)</th></tr>
-            <tr><th class="col-central-tax-rate" style="border:1px solid #333;">Rate</th><th class="col-central-tax-amt" style="border:1px solid #333;">Amount (₹)</th>
-                <th class="col-state-tax-rate" style="border:1px solid #333;">Rate</th><th class="col-state-tax-amt" style="border:1px solid #333;">Amount (₹)</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-hsn-sum" style="border:1px solid #333;">${hsnSacCodeForPreview}</td> 
-                <td class="col-tax-sum" style="border:1px solid #333;">${formatNum(invoiceData.overallTaxableAmount)}</td>
-                <td class="col-central-tax-rate" style="border:1px solid #333;">${gstRateTextForPreview}</td>
-                <td class="col-central-tax-amt" style="border:1px solid #333;">${formatNum(invoiceData.overallCGSTAmount)}</td>
-                <td class="col-state-tax-rate" style="border:1px solid #333;">${gstRateTextForPreview}</td>
-                <td class="col-state-tax-amt" style="border:1px solid #333;">${formatNum(invoiceData.overallSGSTAmount)}</td>
-                <td class="col-tot-tax-sum" style="border:1px solid #333;">${formatNum(invoiceData.overallCGSTAmount + invoiceData.overallSGSTAmount)}</td></tr>
-        </tbody>
-    </table>`;
-
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;"> <tr><td style="width:30%"><strong>Total Tax (in words)</strong></td>
-          <td style="width:70%;text-align:left">Rupees ${invoiceForm.taxAmountInWords.value} only</td></tr>
-    </table>`;
-
-    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="bank-details" style="margin-top:1em"><tr>
-      <td style="width:50%;vertical-align:top">
-        <p><strong>Bank Details:</strong></p>
-        <p><strong>Account Name:</strong> ${invoiceData.accountName}</p>
-        <p><strong>Bank Name:</strong> ${invoiceData.bankName}</p>
-        <p><strong>A/c No:</strong> ${invoiceData.accountNumber}</p>
-        <p><strong>IFSC:</strong> ${invoiceData.ifscCode}</p>
-        <p><strong>Account Type:</strong> ${invoiceData.accountType}</p>
-      </td>
-      <td style="width:50%;vertical-align:bottom; text-align:left;"> <p style="margin-bottom: 5px;">for </p> <p><strong>${invoiceData.facultyName || '_________________________'}</strong></p>
-      </td>
-    </tr></table>`;
-    htmlPreview += `</div>`; 
-    document.getElementById('invoicePreview').innerHTML = htmlPreview;
-    return invoiceData;
-  }
-
-  // --- Update Local Records ---
-  document.getElementById('updateTableBtn').onclick = () => { // Removed async as fetch is removed
-    const processedInvoiceData = generateInvoiceDataAndPreview(); 
-    if (!processedInvoiceData || !processedInvoiceData.invoiceNumber || !processedInvoiceData.invoiceDate) {
-        alert("Please fill in Invoice No, Invoice Date, and faculty details, then click 'Show Preview' before updating records.");
-        return;
-    }
-
-    let recordsSavedCount = 0;
-
-    for (const batchDetail of processedInvoiceData.batchesData) {
-        const itemsPayload = {}; 
-        batchDetail.items.forEach(item => {
-            const rawDescription = item.description.trim(); 
-            const cleanedKey = cleanItemDescriptionForHeader(rawDescription);
-            itemsPayload[cleanedKey] = (itemsPayload[cleanedKey] || 0) + item.amount; 
-        });
-
-        const recordPayloadForLocal = {
-          InvoiceNo: processedInvoiceData.invoiceNumber,
-          InvoiceDate: processedInvoiceData.invoiceDate ? new Date(processedInvoiceData.invoiceDate + 'T00:00:00').toLocaleDateString('en-GB') : '',
-          BatchNo: batchDetail.batchNo,
-          BranchName: batchDetail.branchName, 
-          BatchTaxableValue: batchDetail.batchTaxableAmount,
-          BatchCGSTAmount: batchDetail.batchCGSTAmount,
-          BatchSGSTAmount: batchDetail.batchSGSTAmount,
-          BatchTotalValue: batchDetail.batchTotalValue,
-          Items: itemsPayload 
-        };
-        
-        const existingRecordIndex = records.findIndex(r => r.InvoiceNo === recordPayloadForLocal.InvoiceNo && r.BatchNo === recordPayloadForLocal.BatchNo);
-        if (existingRecordIndex > -1) {
-            records[existingRecordIndex] = recordPayloadForLocal; // Update existing record
-        } else {
-            records.push(recordPayloadForLocal); // Add new record
-        }
-        recordsSavedCount++;
-    }
-
-    if (recordsSavedCount > 0) {
-        alert(`${recordsSavedCount} batch record(s) saved locally.`);
-    } else {
-        alert("No batch data found to save.");
-    }
-    
-    drawRecordsTable();
-    switchTab(2);
-  };
-
-
-  // --- Generate PDF ---
-  document.getElementById('pdfBtn').onclick = ()=>{
-    const invoiceNumber = document.getElementById('invoiceNumber').value || 'INV';
-    const facultyName = document.getElementById('facultyName').value || 'Faculty';
-    const dateSuffix = new Date().toISOString().slice(0,10);
-    const filename = `Invoice-${invoiceNumber}-${facultyName.replace(/\s+/g, '_')}-${dateSuffix}.pdf`;
-
-    generateInvoiceDataAndPreview(); 
-    
-    const element = document.getElementById('printableInvoiceSection'); 
-
-    if (!element || !element.innerHTML.trim()) { 
-        alert("Please generate a preview first by filling in details and clicking 'Show Preview'!");
-        return;
-    }
-    var opt = {
-      margin: [0.4, 0.3, 0.4, 0.3], 
-      filename:     filename,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 1.7, letterRendering: true, useCORS: true, dpi: 192, scrollY: 0 }, 
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
-    };
-    
-    html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
-        console.log("PDF object created, attempting to save...");
-    }).save(); 
-  };
-
-  // --- Download Excel from local records ---
-  document.getElementById('downloadExcelBtn').onclick = ()=>{
-    if (!records.length) {
-        alert("No records to download.");
-        return;
-    }
-    const excelData = records.map(rec => {
-        const flatRecord = {
-            'Invoice No': rec.InvoiceNo,
-            'Invoice Date': rec.InvoiceDate,
-            'Batch No': rec.BatchNo,
-            'Branch Name': rec.BranchName, 
-            'Batch Taxable Value': parseFloat(rec.BatchTaxableValue || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}),
-            'Batch CGST Amount': parseFloat(rec.BatchCGSTAmount || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}),
-            'Batch SGST Amount': parseFloat(rec.BatchSGSTAmount || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}),
-            'Batch Total Value': parseFloat(rec.BatchTotalValue || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}),
-        };
-        if (rec.Items) {
-            const sortedItemKeys = Object.keys(rec.Items).sort(); 
-            for (const cleanedItemKey of sortedItemKeys) {
-                flatRecord[cleanedItemKey] = parseFloat(rec.Items[cleanedItemKey] || 0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-            }
-        }
-        return flatRecord;
-    });
-
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
-    XLSX.writeFile(wb,`invoice_records_${new Date().toISOString().slice(0,10)}.xlsx`);
-  };
-
-  // --- Initial setup ---
-  window.addEventListener('DOMContentLoaded', () => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); 
-    const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('invoiceDate').value = `${yyyy}-${mm}-${dd}`;
-
-    drawRecordsTable();
-    renderActualBatches(1); 
-    if (coll.length > 0 && !coll[0].classList.contains('active')) { 
-        coll[0].classList.add('active');
-        if (coll[0].nextElementSibling) {
-            coll[0].nextElementSibling.style.display = "block";
-        }
-    } else if (coll.length > 0 && coll[0].classList.contains('active')) {
-        if (coll[0].nextElementSibling && coll[0].nextElementSibling.style.display !== 'block') {
-            coll[0].nextElementSibling.style.display = "block";
-        }
-    }
-    document.getElementById('invoicePreview').innerHTML = ''; 
-  });
-
-  </script>
-</body>
-</html>
+Invoice Generation Tool for AICA Faculties
+
+Overview
+
+This HTML-based tool is designed to help AICA (AI in ICAI) faculties generate professional invoices for their services. It allows for detailed input of invoice information, batch configurations, and automatic calculation of amounts and taxes. The tool also features a preview mode, PDF generation, and local record keeping with Excel export functionality.
+
+Features
+
+* User-Friendly Interface: Data entry is organized into collapsible sections for ease of use.
+* Dynamic Batch Configuration: Add multiple batches with multiple line items per batch.
+* GST Calculation: Option to include or exclude GST (currently fixed at 9% CGST + 9% SGST if applicable).
+* Automatic Calculations:
+    * Total taxable amount.
+    * CGST and SGST amounts (per batch and overall).
+    * Total invoice value.
+    * Amounts converted to words.
+* Invoice Preview: See a live preview of the invoice as you fill in the details.
+* PDF Generation: Generate a downloadable PDF of the invoice.
+* Record Keeping:
+    * Local Records Tab: View a table of generated invoices (batch-wise).
+        * Excel Export: Download the locally stored invoice records as an `.xlsx` file.
+* Default Values: Pre-filled common details (e.g., Faculty Name, Bank Details, Branch Name) to speed up invoice creation, which can be edited as needed.
+* Responsive Design: The tool is designed to be usable on various screen sizes, though primarily for desktop use.
+
+How to Use
+
+1.  Open the HTML File:
+    * Download the `invoice_tool_updated_v2.html` (or the latest version) file.
+    * Open this file directly in a modern web browser (e.g., Chrome, Firefox, Edge, Safari). No web server is required for basic functionality.
+
+2.  Navigate Tabs:
+    * Invoice Generation Tab: This is the main tab for creating new invoices. It's active by default.
+    * Invoice Records Tab: This tab displays a list of invoices that have been processed using the "Update Records & View" button.
+
+3.  Fill in Invoice Details (Invoice Generation Tab):
+    * The input fields are grouped into collapsible sections. Click on a section header to expand or collapse it. Only one section can be open at a time.
+    * Invoice & Faculty Details:
+        * `Invoice No`: Enter a unique invoice number (default: KVS-).
+        * `Invoice Date`: Select the invoice date (defaults to today).
+        * `Faculty Name`: Enter the faculty's name (default: K VIJAY SRINIVAS).
+    * GST Applicability:
+        * Select "Yes" or "No" for GST. This affects tax calculations.
+    * Batch Configuration:
+        * `Number of Batches`: Enter the number of batches for this invoice.
+        * For each batch:
+            * `Batch Number`: Enter the batch number (e.g., 325).
+            * `Branch Name`: Enter the branch name (default: Hyderabad).
+            * Line Items:
+                * `Particulars`: Select from the dropdown (e.g., "Session Fees", "Conveyance").
+                * `HSN/SAC`: Defaults to 9982 (can be made editable if needed by modifying HTML).
+                * `GST Rate`: Auto-filled based on GST applicability.
+                * `Amount`: Enter the amount for this line item.
+                * Use the `+ Add Item` button to add more line items to a batch.
+                * Use the `–` button to remove a line item.
+    * Amounts & Taxes (Auto-calculated): These fields are read-only and will be populated when you click "Show Preview."
+        * `Total Amount (in words)`
+        * `Advance Paid (₹)`: You can enter any advance payment received here.
+        * `Total Tax (in words)`
+    * Bank Details:
+        * Review and edit the default bank details if necessary.
+
+4.  Generate Preview:
+    * After filling in the necessary details, click the "Show Preview" button.
+    * The invoice preview will appear at the bottom of the "Invoice Generation" tab. This also calculates and populates the "Amounts & Taxes" fields.
+
+5.  Update Records & View (Optional but Recommended for Tracking):
+    * Click the "Update Records & View" button.
+    * This action will:
+        *         * Add the invoice data to a local list.
+        * Automatically switch you to the "Invoice Records" tab to see the updated list.
+
+6.  Generate PDF:
+    * Ensure you have clicked "Show Preview" first.
+    * Click the "Generate PDF" button.
+    * The invoice (based on the preview) will be generated as a PDF file and downloaded by your browser.
+
+7.  View Invoice Records (Invoice Records Tab):
+    * This tab lists all invoices (batch-wise) that have been processed via "Update Records & View".
+    * It includes fixed columns (Invoice No, Date, Batch No, Branch Name, Batch Totals) and dynamic columns based on the "Particulars" entered for batch items.
+    * Delete (Local): You can delete records from this local list. 
+    * Download Records (Excel): Click this button to download all records currently displayed in the "Invoice Records" tab as an `.xlsx` file.
+
+Dependencies
+
+The tool uses the following external JavaScript libraries, which are loaded via CDN:
+
+* html2pdf.js (v0.10.1): For generating PDF documents from HTML content.
+    * `https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js`
+* xlsx.js (SheetJS) (v0.18.5): For generating Excel (`.xlsx`) files.
+    * `https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js`
+
+An internet connection is required for these libraries to load.
+
+Customization Notes
+
+* Default Values: Default values for fields like Invoice No, Faculty Name, Branch Name, and Bank Details are set directly in the HTML `value` attributes of the input fields. These can be changed as needed.
+* GST Rate: The GST rate is currently hardcoded at 9% CGST and 9% SGST in the JavaScript logic. If this needs to be variable, the JavaScript functions `gstYes()` and `generateInvoiceDataAndPreview()` would need modification.
+* HSN/SAC Code: The HSN/SAC code for batch items defaults to "9982". This can be changed in the `renderBatches` function or by making the input field editable.
+* Particulars Dropdown: The list of items in the "Particulars" dropdown is defined in the `renderBatches` function within the HTML structure for the select element.
+
+Troubleshooting
+
+* PDF Not Generating Correctly:
+    * Ensure you click "Show Preview" before "Generate PDF."
+    * Check your internet connection, as `html2pdf.js` is loaded externally.
+    * Complex layouts or very long content can sometimes pose challenges for HTML-to-PDF conversion. The tool attempts to optimize for A4 portrait.
+* Excel Download Not Working:
+    * Check your internet connection for the `xlsx.js` library.
+    * Ensure there are records in the "Invoice Records" tab.
