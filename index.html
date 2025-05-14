@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice Tool for AICA Faculties - Enhanced V7</title>
+  <title>Invoice Tool - Local Version</title>
   <style>
     body { font-family: Arial, sans-serif; margin:0; padding:0; font-size: 14px; }
     header { background:#004a80; color:white; padding:1em; text-align:center; }
@@ -50,7 +50,7 @@
     label { display:inline-block; width:180px; margin-bottom:0.5em; vertical-align: middle; }
     fieldset > input[type="text"],
     fieldset > input[type="date"],
-    fieldset > input[type="number"], /* Keep for other number fields if any */
+    fieldset > input[type="number"],
     fieldset > select {
       width: calc(100% - 195px); 
       padding: 0.6em;
@@ -59,9 +59,8 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* Specific style for batchCount to ensure it's easily tappable */
     #batchCount {
-        width: 70px !important; /* Make it a bit wider for easier tap/edit */
+        width: 70px !important; 
         text-align: center;
     }
 
@@ -87,54 +86,38 @@
     }
     .action-buttons button:hover, #downloadExcelBtn:hover { background: #003366; }
 
-    #invoicePreview { 
-        border:1px solid #004a80; 
-        padding:1em; margin-top:1em; 
-        overflow-x:auto; 
-        background: white; 
-    }
-    #printableInvoiceSection * { 
+    /* Styles for the preview area that will be converted to PDF - FROM invoice_tool V 4.0.html */
+    #printableInvoiceSection * { /* Keep this for consistent box model in PDF content */
         box-sizing: border-box !important;
     }
-    #printableInvoiceSection {
-        width: 100%; 
-    }
-    #printableInvoiceSection table{
-        width:100%; 
-        border-collapse:collapse;
-        margin-bottom:2px; 
-        font-size:8.5px; 
-        table-layout: fixed; 
-    } 
-    #printableInvoiceSection th, 
-    #printableInvoiceSection td{
-        border:1px solid #555; 
-        padding: 3px 2px; 
-        vertical-align:top; 
-        word-wrap: break-word; 
-        overflow-wrap: break-word; 
-        word-break: break-all; 
-    }
-    #printableInvoiceSection .table-header .col-invoice-no{width:28%;}
-    #printableInvoiceSection .table-header .col-date{width:17%;text-align:center}
-    #printableInvoiceSection .table-header .col-static{width:55%;}
-
-    #printableInvoiceSection .table-items .col-sl{width:4%; text-align:center;}
-    #printableInvoiceSection .table-items .col-part{width:48%;} 
-    #printableInvoiceSection .table-items .col-hsn-preview{width:12%; text-align:center;}
-    #printableInvoiceSection .table-items .col-gst-preview{width:10%; text-align:center;}
-    #printableInvoiceSection .table-items .col-amount-preview{width:26%;text-align:right;} 
+    #invoicePreview { border:2px solid #004a80; padding:1em; margin-top:1em; overflow-x:auto; background: white; }
+    #invoicePreview table{width:100%;border-collapse:collapse;margin-bottom:-1px;font-size:12px}
+    #invoicePreview th,#invoicePreview td{border:1px solid #333;padding:6px;vertical-align:top}
+    /* Column classes used by JavaScript to structure the preview table - these will be applied from invoice_tool_V_4.0.html CSS */
+    #invoicePreview .col-invoice-no{width:30%;}
+    #invoicePreview .col-date{width:20%;text-align:center;}
+    #invoicePreview .col-static{width:50%;}
+    #invoicePreview .col-sl{width:4%; text-align:center;} /* Applied to Sl. No. column in items table */
+    #invoicePreview .col-part{width:72%;} /* Applied to Particulars column in items table */
+    #invoicePreview .col-hsn-preview{width:9%; text-align:center;} /* Applied to HSN/SAC column in items table */
+    #invoicePreview .col-gst-preview{width:5%; text-align:center;} /* Applied to GST Rate column in items table */
+    #invoicePreview .col-amount-preview{width:10%;text-align:right;} /* Applied to Amount column in items table */
     
-    #printableInvoiceSection .table-tax-summary .col-hsn-sum{width:28%;} 
-    #printableInvoiceSection .table-tax-summary .col-tax-sum{width:18%;text-align:right} 
-    #printableInvoiceSection .table-tax-summary .col-central-tax-rate{width:8%;text-align:center}
-    #printableInvoiceSection .table-tax-summary .col-central-tax-amt{width:13%;text-align:right}
-    #printableInvoiceSection .table-tax-summary .col-state-tax-rate{width:8%;text-align:center}
-    #printableInvoiceSection .table-tax-summary .col-state-tax-amt{width:13%;text-align:right}
-    #printableInvoiceSection .table-tax-summary .col-tot-tax-sum{width:12%;text-align:right} 
+    #invoicePreview .tax-sum th,
+    #invoicePreview .tax-sum td{padding:6px;word-wrap:break-word;} /* .tax-sum is a class applied to the tax summary table */
+    #invoicePreview .col-hsn-sum{width:45ch;} /* Applied to HSN/SAC column in tax summary */
+    #invoicePreview .col-tax-sum{width:14ch;text-align:right;} /* Applied to Taxable Value column in tax summary */
+    #invoicePreview .col-central-tax-rate, /* Ensure JS uses these if not already */
+    #invoicePreview .col-state-tax-rate,
+    #invoicePreview .col-rate-sum {width:5ch;text-align:center;} /* Rate columns in tax summary */
+    #invoicePreview .col-central-tax-amt, /* Ensure JS uses these if not already */
+    #printableInvoiceSection .col-state-tax-amt,
+    #invoicePreview .col-amt-sum {width:12ch;text-align:right;} /* Amount columns in tax summary */
+    #invoicePreview .col-tot-tax-sum, /* Ensure JS uses this for Total Tax column */
+    #invoicePreview .col-tot-sum {width:16ch;text-align:right;} /* Total Tax column in tax summary */
     
-    #printableInvoiceSection .bank-details strong{display:inline;margin:0}
-    #printableInvoiceSection p { margin: 1px 0; font-size: 8.5px; line-height: 1.3; } 
+    #invoicePreview .bank-details strong{display:inline;margin:0;} /* .bank-details is a class applied to the bank details table */
+    #invoicePreview p { margin: 3px 0; font-size:12px; line-height: 1.2;} /* General p tag styling within preview, from V4 style */
 
 
     #recordsTableContainer { overflow-x: auto; }
@@ -146,11 +129,59 @@
     #recordsTable td button { padding: 3px 6px; font-size: 0.9em;}
 
     footer { margin-top:2em; padding: 1em; font-size:0.8em; color:#555; text-align:center; background: #f0f0f0; }
-  </style>
+  
+#printableInvoiceSection {
+  min-height: 21cm; /* ~A4 height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Vertically center */
+  padding: 1cm;
+}
+
+#invoicePreview table.table-items {
+  min-height: 15cm; /* Occupy ~75% of A4 height */
+}
+
+#invoicePreview {
+  max-width: 100%; /* Prevent overflow in PDF */
+  box-sizing: border-box;
+}
+
+
+#invoicePreview table,
+#invoicePreview th,
+#invoicePreview td {
+  border: 1px solid #333 !important;
+  border-collapse: collapse !important;
+}
+#invoicePreview th,
+#invoicePreview td {
+  padding: 6px;
+}
+
+
+  /* Wrap text in the Particulars column */
+  .particulars-cell {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  /* Ensure all tables have border lines */
+  table, th, td {
+    border: 1px solid black !important;
+    border-collapse: collapse !important;
+  }
+
+  /* Padding to ensure readability */
+  th, td {
+    padding: 4px !important;
+  }
+</style>
 </head>
 <body>
 
-  <header><h1>Invoice Generation Tool for AICA Faculties</h1></header>
+  <header><h1>Invoice Generation Tool</h1></header>
 
   <div class="tabs">
     <button id="tab1Btn" class="active">Invoice Generation</button>
@@ -199,9 +230,9 @@
       <div class="collapsible-content">
         <fieldset>
           <label for="accountName">Account Name:</label><input id="accountName" type="text" placeholder="Enter account name" value="K VIJAY SRINIVAS" /><br>
-          <label for="bankName">Bank Name:</label><input id="bankName" type="text" placeholder="Enter bank name" value="ICICI BANK LTD" /><br>
+          <label for="bankName">Bank Name:</label><input id="bankName" type="text" placeholder="Enter bank name" value="XYZ BANK LTD" /><br>
           <label for="accountNumber">A/c No:</label><input id="accountNumber" type="text" placeholder="Enter account number" value="123456789" /><br>
-          <label for="ifscCode">IFSC:</label><input id="ifscCode" type="text" placeholder="Enter IFSC code" value="ICIC0000999" /><br>
+          <label for="ifscCode">IFSC:</label><input id="ifscCode" type="text" placeholder="Enter IFSC code" value="ICIC0000123" /><br>
           <label for="accountType">Account Type:</label><input id="accountType" type="text" placeholder="Enter account type" value="Savings Bank" /><br>
         </fieldset>
       </div>
@@ -209,12 +240,12 @@
 
     <div class="action-buttons" style="text-align:center; margin:20px;">
       <button id="previewBtn">Show Preview</button>
-      <button id="updateTableBtn">Update Records & View</button>
-      <button id="pdfBtn">Generate PDF</button>
+      <button id="updateTableBtn">Save Record & View</button> <button id="pdfBtn">Generate PDF</button>
     </div>
 
     <div id="invoicePreview">
-        </div>
+
+    </div>
   </div>
 
   <div id="tab2" class="tabContent">
@@ -228,22 +259,21 @@
     <button id="downloadExcelBtn">Download Records (Excel)</button>
   </div>
 
-  <footer>Created by CA Vijay Srinivas Kothapalli, Partner C Ramachandram & Co., Chartered Accountants, Hyderabad. © All rights reserved.</footer>
+  <footer>Created by CA Vijay Srinivas Kothapalli, Partner C Ramachandram & Co., Chartered Accountants. © All rights reserved.</footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
-  // --- Collapsible Script (Revised Accordion Logic) ---
+  // --- Collapsible Script ---
   var coll = document.getElementsByClassName("collapsible");
   for (var i = 0; i < coll.length; i++) {
     coll[i].addEventListener("click", function() {
       var content = this.nextElementSibling;
       var isCurrentlyActive = this.classList.contains("active");
 
-      // Close all other sections first
       for (var j = 0; j < coll.length; j++) {
-        if (coll[j] !== this) { // If it's not the clicked button
+        if (coll[j] !== this) { 
           coll[j].classList.remove("active");
           if (coll[j].nextElementSibling) {
             coll[j].nextElementSibling.style.display = "none";
@@ -251,15 +281,12 @@
         }
       }
 
-      // Toggle the clicked section
       if (isCurrentlyActive) {
-        // If it was active, close it
         this.classList.remove("active");
         if (content) {
           content.style.display = "none";
         }
       } else {
-        // If it was not active, open it
         this.classList.add("active");
         if (content) {
           content.style.display = "block";
@@ -381,7 +408,7 @@
                 </tr>
             </thead>
             <tbody><tr>
-                <td><input name="slNo" value="1" readonly /></td>
+                <td><input name="slNo" value="1" readonly /></div></div></div></td>
                 <td>
                     <select name="description">
                         <option value="Session Fees">Session Fees</option>
@@ -504,7 +531,7 @@
       const btnDelete=document.createElement('button');
       btnDelete.textContent='Delete';
       btnDelete.onclick=()=>{
-          if(confirm('Are you sure you want to delete this record locally? This does not affect Google Sheets.')) {
+          if(confirm('Are you sure you want to delete this record locally?')) {
             records.splice(index,1);
             drawRecordsTable();
           }
@@ -589,9 +616,9 @@
     const formatNum = (num) => num.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 
     let htmlPreview=`<div id="printableInvoiceSection">`; 
-    htmlPreview+=`<table class="table-header"> <tr><td class="col-invoice-no"><strong>Invoice No:</strong> ${invoiceData.invoiceNumber}</td>
-          <td class="col-date"><strong>Dated:</strong> ${invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate + 'T00:00:00').toLocaleDateString('en-GB') : ''}</td>
-          <td class="col-static" rowspan="2">
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="table-header"> <tr><td class="col-invoice-no" style="border:1px solid #333;"><strong>Invoice No:</strong> ${invoiceData.invoiceNumber}</td>
+          <td class="col-date" style="border:1px solid #333;"><strong>Dated:</strong> ${invoiceData.invoiceDate ? new Date(invoiceData.invoiceDate + 'T00:00:00').toLocaleDateString('en-GB') : ''}</td>
+          <td class="col-static" style="border:1px solid #333;" rowspan="2">
             <strong>Committee/Department Name</strong>
             <p>Mr. Vishnu Garg, Secretary, AI in ICAI</p>
             <p>The Institute of Chartered Accountants of India</p>
@@ -600,13 +627,13 @@
             <p>Contact: phone | GSTIN/UIN: N.A.</p>
             <p>Email: ai@icai.in | Mobile: 8800717953</p>
           </td></tr>
-      <tr><td colspan="2"><strong>Details of the Faculty</strong><br>${invoiceData.facultyName}</td></tr>
+      <tr><td colspan="2"><strong>Details of the Faculty</strong><br><br>${invoiceData.facultyName}</td></tr>
     </table>`;
 
-    htmlPreview+=`<table class="table-items"> <thead>
-            <tr><th class="col-sl">Sl.</th><th class="col-part">Particulars</th>
-                <th class="col-hsn-preview">HSN/SAC</th><th class="col-gst-preview">GST Rate</th>
-                <th class="col-amount-preview">Amount (₹)</th></tr>
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="table-items"> <thead>
+            <tr><th class="col-sl" style="border:1px solid #333;">Sl.</th><th class="col-part" style="border:1px solid #333;">Particulars</th>
+                <th class="col-hsn-preview" style="border:1px solid #333;">HSN/SAC</th><th class="col-gst-preview" style="border:1px solid #333;">GST Rate</th>
+                <th class="col-amount-preview" style="border:1px solid #333;">Amount (₹)</th></tr>
         </thead>
         <tbody>`;
     let itemRunningSlNo = 1;
@@ -615,49 +642,49 @@
       htmlPreview+=`<tr><td></td><td colspan="4"><strong>AI Certificate Course AICA-Level-1 - Batch ${batch.batchNo} ${branchDisplay}</strong></td></tr>`;
       batch.items.forEach(it=>{
         htmlPreview+=`<tr>
-          <td class="col-sl">${itemRunningSlNo++}</td>
-          <td class="col-part">${it.description}</td>
-          <td class="col-hsn-preview">${it.hsnSacCode}</td>
-          <td class="col-gst-preview">${it.gstRateDisplay}</td>
-          <td class="col-amount-preview">${formatNum(it.amount)}</td>
+          <td class="col-sl" style="border:1px solid #333;">${itemRunningSlNo++}</td>
+          <td class="col-part particulars-cell" style="border:1px solid #333; word-wrap:break-word; word-break:break-word; max-width:300px;">${it.description}</td>
+          <td class="col-hsn-preview" style="border:1px solid #333;"><div style="text-align:center;">${it.hsnSacCode}</td>
+          <td class="col-gst-preview" style="border:1px solid #333;"><div style="text-align:center;">${it.gstRateDisplay}</td>
+          <td class="col-amount-preview" style="border:1px solid #333;"><div style="text-align:right;">${formatNum(it.amount)}</td>
         </tr>`;
       });
     });
     htmlPreview+=`</tbody><tfoot>
       <tr><td colspan="4" style="text-align:right"><strong>Total Taxable Amount</strong></td>
-          <td class="col-amount-preview"><strong>${formatNum(invoiceData.overallTaxableAmount)}</strong></td></tr>
+          <td class="col-amount-preview" style="border:1px solid #333;"><div style="text-align:right;"><strong>${formatNum(invoiceData.overallTaxableAmount)}</strong></td></tr>
     </tfoot></table>`;
 
-    htmlPreview+=`<table> <tr><td style="width:30%"><strong>Total Amount (in words)</strong></td>
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;"> <tr><td style="width:30%"><strong>Total Amount (in words)</strong></td>
           <td style="width:70%;text-align:left">Rupees ${invoiceForm.amountInWords.value} only</td></tr>
       <tr><td><strong>Advance Paid (₹)</strong></td>
           <td style="text-align:right">${formatNum(invoiceData.advancePaid)}</td></tr>
     </table>`;
 
-    htmlPreview+=`<table class="table-tax-summary"> <thead>
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="tax-sum"> <thead>
             <tr><th rowspan="2" class="col-hsn-sum">HSN/SAC</th>
                 <th rowspan="2" class="col-tax-sum">Taxable Value (₹)</th>
                 <th colspan="2">Central Tax</th><th colspan="2">State Tax</th>
                 <th rowspan="2" class="col-tot-tax-sum">Total Tax (₹)</th></tr>
-            <tr><th class="col-central-tax-rate">Rate</th><th class="col-central-tax-amt">Amount (₹)</th>
-                <th class="col-state-tax-rate">Rate</th><th class="col-state-tax-amt">Amount (₹)</th></tr>
+            <tr><th class="col-central-tax-rate" style="border:1px solid #333;">Rate</th><th class="col-central-tax-amt" style="border:1px solid #333;">Amount (₹)</th>
+                <th class="col-state-tax-rate" style="border:1px solid #333;">Rate</th><th class="col-state-tax-amt" style="border:1px solid #333;">Amount (₹)</th></tr>
         </thead>
         <tbody>
-            <tr><td class="col-hsn-sum">${hsnSacCodeForPreview}</td> 
-                <td class="col-tax-sum">${formatNum(invoiceData.overallTaxableAmount)}</td>
-                <td class="col-central-tax-rate">${gstRateTextForPreview}</td>
-                <td class="col-central-tax-amt">${formatNum(invoiceData.overallCGSTAmount)}</td>
-                <td class="col-state-tax-rate">${gstRateTextForPreview}</td>
-                <td class="col-state-tax-amt">${formatNum(invoiceData.overallSGSTAmount)}</td>
-                <td class="col-tot-tax-sum">${formatNum(invoiceData.overallCGSTAmount + invoiceData.overallSGSTAmount)}</td></tr>
+            <tr><td class="col-hsn-sum" style="border:1px solid #333;">${hsnSacCodeForPreview}</td> 
+                <td class="col-tax-sum" style="border:1px solid #333;">${formatNum(invoiceData.overallTaxableAmount)}</td>
+                <td class="col-central-tax-rate" style="border:1px solid #333;">${gstRateTextForPreview}</td>
+                <td class="col-central-tax-amt" style="border:1px solid #333;">${formatNum(invoiceData.overallCGSTAmount)}</td>
+                <td class="col-state-tax-rate" style="border:1px solid #333;">${gstRateTextForPreview}</td>
+                <td class="col-state-tax-amt" style="border:1px solid #333;">${formatNum(invoiceData.overallSGSTAmount)}</td>
+                <td class="col-tot-tax-sum" style="border:1px solid #333;">${formatNum(invoiceData.overallCGSTAmount + invoiceData.overallSGSTAmount)}</td></tr>
         </tbody>
     </table>`;
 
-    htmlPreview+=`<table> <tr><td style="width:30%"><strong>Total Tax (in words)</strong></td>
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;"> <tr><td style="width:30%"><strong>Total Tax (in words)</strong></td>
           <td style="width:70%;text-align:left">Rupees ${invoiceForm.taxAmountInWords.value} only</td></tr>
     </table>`;
 
-    htmlPreview+=`<table class="bank-details" style="margin-top:1em"><tr>
+    htmlPreview += `<table style="width:100%; border-collapse: collapse; border: 1px solid #333;" class="bank-details" style="margin-top:1em"><tr>
       <td style="width:50%;vertical-align:top">
         <p><strong>Bank Details:</strong></p>
         <p><strong>Account Name:</strong> ${invoiceData.accountName}</p>
@@ -674,17 +701,15 @@
     return invoiceData;
   }
 
-  // --- Update Records & Google Sheet ---
-  document.getElementById('updateTableBtn').onclick = async () => {
+  // --- Update Local Records ---
+  document.getElementById('updateTableBtn').onclick = () => { // Removed async as fetch is removed
     const processedInvoiceData = generateInvoiceDataAndPreview(); 
     if (!processedInvoiceData || !processedInvoiceData.invoiceNumber || !processedInvoiceData.invoiceDate) {
         alert("Please fill in Invoice No, Invoice Date, and faculty details, then click 'Show Preview' before updating records.");
         return;
     }
 
-    const appScriptUrl = 'https://script.google.com/macros/s/AKfycbw8vqPIT_7JfYlWQ9NG-QeXwlFFk3sNFm4lKE07vIjCEr7KbZBnRBw4wzvO5w52qWUpaw/exec';
-    let recordsUpdatedCount = 0;
-    let errorsEncountered = false;
+    let recordsSavedCount = 0;
 
     for (const batchDetail of processedInvoiceData.batchesData) {
         const itemsPayload = {}; 
@@ -705,47 +730,20 @@
           BatchTotalValue: batchDetail.batchTotalValue,
           Items: itemsPayload 
         };
-
-        const payloadForGoogleSheet = {
-            InvoiceNo: processedInvoiceData.invoiceNumber,
-            InvoiceDate: processedInvoiceData.invoiceDate ? new Date(processedInvoiceData.invoiceDate + 'T00:00:00').toLocaleDateString('en-GB') : '',
-            BatchNo: batchDetail.batchNo,
-            BranchName: batchDetail.branchName, 
-            TaxableValue: batchDetail.batchTaxableAmount.toFixed(2), 
-            CGSTAmount: batchDetail.batchCGSTAmount.toFixed(2),     
-            SGSTAmount: batchDetail.batchSGSTAmount.toFixed(2),     
-            TotalValue: batchDetail.batchTotalValue.toFixed(2)      
-        };
         
         const existingRecordIndex = records.findIndex(r => r.InvoiceNo === recordPayloadForLocal.InvoiceNo && r.BatchNo === recordPayloadForLocal.BatchNo);
         if (existingRecordIndex > -1) {
-            records[existingRecordIndex] = recordPayloadForLocal;
+            records[existingRecordIndex] = recordPayloadForLocal; // Update existing record
         } else {
-            records.push(recordPayloadForLocal);
+            records.push(recordPayloadForLocal); // Add new record
         }
-
-        try {
-            await fetch(appScriptUrl, { 
-              method: 'POST',
-              mode: 'no-cors',
-              cache: 'no-cache',
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify(payloadForGoogleSheet),
-              redirect: 'follow'
-            });
-            recordsUpdatedCount++;
-        } catch (error) {
-            console.error('Error updating record to Google Sheet for batch', batchDetail.batchNo, ':', error);
-            errorsEncountered = true;
-        }
+        recordsSavedCount++;
     }
 
-    if (errorsEncountered) {
-        alert(`Some records encountered errors during Google Sheet update. ${recordsUpdatedCount} batch record(s) processed for local storage. Please check console for details.`);
-    } else if (recordsUpdatedCount > 0) {
-        alert(`${recordsUpdatedCount} batch record(s) processed for Google Sheets and saved locally.`);
+    if (recordsSavedCount > 0) {
+        alert(`${recordsSavedCount} batch record(s) saved locally.`);
     } else {
-        alert("No batch data found to update.");
+        alert("No batch data found to save.");
     }
     
     drawRecordsTable();
@@ -769,7 +767,7 @@
         return;
     }
     var opt = {
-      margin:       [0.5, 0.4, 0.5, 0.4], 
+      margin: [0.4, 0.3, 0.4, 0.3], 
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 1.7, letterRendering: true, useCORS: true, dpi: 192, scrollY: 0 }, 
@@ -825,15 +823,11 @@
     drawRecordsTable();
     renderActualBatches(1); 
     if (coll.length > 0 && !coll[0].classList.contains('active')) { 
-        // This ensures the first collapsible is open if not already marked active by HTML.
-        // The HTML already marks the first one active, so this is a fallback.
         coll[0].classList.add('active');
         if (coll[0].nextElementSibling) {
             coll[0].nextElementSibling.style.display = "block";
         }
     } else if (coll.length > 0 && coll[0].classList.contains('active')) {
-        // If the first one is active as per HTML, ensure its content is displayed.
-        // This is redundant if HTML style="display:block" is present, but safe.
         if (coll[0].nextElementSibling && coll[0].nextElementSibling.style.display !== 'block') {
             coll[0].nextElementSibling.style.display = "block";
         }
